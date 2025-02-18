@@ -1,0 +1,90 @@
+scale 1.5
+hide circle
+' skinparam linetype ortho
+' skinparam linetype polyline
+skinparam fixCircleLabelOverlapping true
+skinparam classAttributeIconSize 0
+hide methods
+
+
+'Entities
+entity User {
+	firstname
+	lastname
+	{static} email
+	password
+	registration_date
+}
+
+entity Podcast {
+	title
+	description
+	{static} rss_feed
+	image
+	author
+	episodes_count 
+}
+
+entity Episode {
+	title
+	description
+	duration
+	released_at
+	{static} audio_url
+}
+
+entity Listening {
+	progression
+	listening_count
+}
+
+entity Category {
+	{static} name
+}
+
+entity Playlist {
+	'unique seulement sur la combinaison name+auteur.
+	description
+}
+
+entity QueuedEpisode {
+	index
+}
+
+entity Badge {
+	{static}name
+	points
+	description
+	type
+	condition_value
+}
+
+entity Comment {
+	note
+	content
+	date
+}
+
+'Relationships
+User [name] "1"-"*" Playlist: create
+Podcast "1" o-left-"*" Episode
+'TODO: arrow direction is correct ?
+Podcast "*"-"*" Category: categorize <
+Episode "*"-"*" User: listen >
+Listening . (Episode, User)
+Playlist "*"-"*" Episode: list >
+Episode "*"-"*" User: queue <
+User "1"-left-"*" [id] Comment : post >
+'TODO: should we really add this id identifier and a weak entity ??
+Comment "*"--"1  " Episode : has <
+User "*"--"*" Badge : obtain >
+Comment "1"-left-"*" Comment : respond <
+
+note right of QueuedEpisode: CI: Users cannot have \na given episode \nmore than one time in \ntheir listening queue.
+note bottom of QueuedEpisode: CI: The combination \nof QueuedEpisode's index \nand associated user is unique.
+(User, Episode) . QueuedEpisode
+note "CI: There's at max one \nlistening entry linking\na podcast episode and a user." as N3
+Listening .. N3
+note top of Comment: CI: A comment cannot reply to itself\nand a can reply to other comments\nonly in the same episode.
+
+note "Project: Podweb\nVersion: 2\nDate:26.11.2023" as N5

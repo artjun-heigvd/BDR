@@ -1,0 +1,58 @@
+version: '3.8'
+
+name: podweb-infra
+
+networks:
+  podweb-net:
+    driver: bridge
+
+services:
+  postgresql:
+    image: 'bitnami/postgresql:16'
+    container_name: podweb-postgresql
+    environment:
+      - POSTGRESQL_USERNAME=bdr
+      - POSTGRESQL_PASSWORD=bdr
+      - POSTGRESQL_DATABASE=podweb
+      - POSTGRESQL_POSTGRES_PASSWORD=root
+    ports:
+      - 5432:5432
+    volumes:
+      - .:/data:ro
+    networks:
+      - podweb-net
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "bdr"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  podweb:
+    build: .
+    environment:
+      # Loaded from .env
+      - DB_HOST=postgresql
+      - DB_NAME=podweb
+      - DB_PORT=${DB_PORT}
+      - DB_USER=${DB_USER}
+      - DB_PWD=${DB_PWD}
+    networks:
+      - podweb-net
+    ports:
+      - 7000:7000
+    depends_on: 
+      dbsetup:
+        condition: service_completed_successfully
+
+  dbsetup:
+    depends_on: 
+      postgresql:
+          condition: service_healthy
+    build: ../
+    environment:
+      - DB_HOST=postgresql
+      - DB_NAME=podweb
+    volumes:
+      - ../:/repos
+    networks:
+      - podweb-net
